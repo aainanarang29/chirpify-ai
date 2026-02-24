@@ -1,0 +1,357 @@
+---
+title: "Build a Text-to-Speech App with Per-Character Billing"
+description: "Learn how to build Chirpify AI - a text-to-speech app using ElevenLabs and Dodo Payments for credit-based monetization"
+---
+
+# Chirpify AI: Text-to-Speech with Per-Character Billing
+
+Build a modern text-to-speech web app that charges users per character using Dodo Payments. Users get 500 free characters to try, then purchase credit packs to continue.
+
+<Frame>
+  <img src="/images/chirpify-demo.png" alt="Chirpify AI Demo" />
+</Frame>
+
+## What You'll Build
+
+- A text-to-speech app powered by ElevenLabs
+- Per-character billing with three pricing tiers
+- Credit balance tracking with localStorage
+- Dodo Payments checkout integration
+- Beautiful claymorphic UI with micro-animations
+
+## Tech Stack
+
+- **Frontend**: Vanilla HTML/CSS/JS
+- **Backend**: Node.js + Express (Vercel serverless)
+- **TTS API**: ElevenLabs
+- **Payments**: Dodo Payments
+
+## Pricing Model
+
+| Pack | Characters | Price | Best For |
+|------|------------|-------|----------|
+| Starter | 10,000 | $5 | Trying it out |
+| Pro | 50,000 | $10 | Regular users |
+| Power | 200,000 | $25 | Power users |
+
+---
+
+## Step 1: Create Products on Dodo Payments
+
+First, create your credit pack products using the Dodo Payments API:
+
+```bash
+# Create Starter Pack ($5 = 500 cents)
+curl -X POST "https://test.dodopayments.com/products" \
+  -H "Authorization: Bearer YOUR_DODO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Starter Pack",
+    "description": "10,000 characters for text-to-speech",
+    "price": {
+      "currency": "USD",
+      "price": 500,
+      "type": "one_time_price"
+    },
+    "tax_category": "digital_products"
+  }'
+```
+
+Repeat for Pro ($10 = 1000 cents) and Power ($25 = 2500 cents) packs. Save the `product_id` from each response.
+
+<Tip>
+Use `https://test.dodopayments.com` for development and `https://live.dodopayments.com` for production.
+</Tip>
+
+---
+
+## Step 2: Build the Checkout API
+
+Create a serverless function that creates Dodo payment sessions:
+
+```javascript api/checkout.js
+const PRODUCTS = {
+  starter: { id: 'pdt_xxx', characters: 10000, price: 5 },
+  pro: { id: 'pdt_xxx', characters: 50000, price: 10 },
+  power: { id: 'pdt_xxx', characters: 200000, price: 25 },
+};
+
+const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY;
+const DODO_BASE_URL = 'https://test.dodopayments.com';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { pack } = req.body;
+  const product = PRODUCTS[pack];
+
+  if (!product) {
+    return res.status(400).json({ error: 'Invalid pack' });
+  }
+
+  const response = await fetch(`${DODO_BASE_URL}/payments`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${DODO_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      payment_link: true, // Required to get checkout URL
+      billing: {
+        city: 'San Francisco',
+        country: 'US',
+        state: 'CA',
+        street: '123 Main St',
+        zipcode: '94102',
+      },
+      customer: {
+        email: 'customer@example.com',
+        name: 'Customer',
+      },
+      product_cart: [
+        { product_id: product.id, quantity: 1 }
+      ],
+      return_url: `https://yourapp.com?success=true&characters=${product.characters}`,
+    }),
+  });
+
+  const data = await response.json();
+
+  res.json({
+    checkoutUrl: data.payment_link,
+    characters: product.characters,
+  });
+}
+```
+
+<Warning>
+Always include `payment_link: true` in your request body. Without it, `payment_link` will be `null` in the response.
+</Warning>
+
+---
+
+## Step 3: Handle Payment Success
+
+When users return from checkout, add credits to their balance:
+
+```javascript
+// Check URL for successful payment
+const urlParams = new URLSearchParams(window.location.search);
+
+if (urlParams.get('success') === 'true') {
+  const addedChars = parseInt(urlParams.get('characters') || '0');
+
+  if (addedChars > 0) {
+    // Add to existing balance
+    let credits = parseInt(localStorage.getItem('credits') || '500');
+    credits += addedChars;
+    localStorage.setItem('credits', credits.toString());
+
+    // Clean up URL
+    window.history.replaceState({}, '', window.location.pathname);
+
+    // Show success message
+    showToast(`${addedChars.toLocaleString()} characters added!`);
+  }
+}
+```
+
+---
+
+## Step 4: Track Usage & Deduct Credits
+
+Before each TTS generation, check balance and deduct characters:
+
+```javascript
+async function generateSpeech(text, voice) {
+  const charCost = text.length;
+  let credits = parseInt(localStorage.getItem('credits') || '500');
+
+  // Check if user has enough credits
+  if (credits < charCost) {
+    showPricingModal();
+    return;
+  }
+
+  // Generate speech via your API
+  const response = await fetch('/api/speak', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, voice }),
+  });
+
+  if (response.ok) {
+    // Deduct credits after successful generation
+    credits -= charCost;
+    localStorage.setItem('credits', credits.toString());
+    updateCreditsDisplay();
+
+    const data = await response.json();
+    playAudio(data.audio);
+  }
+}
+```
+
+---
+
+## Step 5: Build the Pricing UI
+
+Create a modal that shows when users run out of credits:
+
+```html
+<div class="pricing-modal">
+  <h2>Buy Credits</h2>
+  <p>Get more characters to keep generating speech!</p>
+
+  <div class="pricing-grid">
+    <div class="pricing-card" data-pack="starter">
+      <div class="amount">10K</div>
+      <div class="label">characters</div>
+      <div class="price">$5</div>
+    </div>
+
+    <div class="pricing-card popular" data-pack="pro">
+      <div class="amount">50K</div>
+      <div class="label">characters</div>
+      <div class="price">$10</div>
+      <div class="tag">Most Popular</div>
+    </div>
+
+    <div class="pricing-card" data-pack="power">
+      <div class="amount">200K</div>
+      <div class="label">characters</div>
+      <div class="price">$25</div>
+      <div class="tag">Best Value</div>
+    </div>
+  </div>
+</div>
+```
+
+```javascript
+// Handle pricing card clicks
+document.querySelectorAll('.pricing-card').forEach(card => {
+  card.addEventListener('click', async () => {
+    const pack = card.dataset.pack;
+
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pack }),
+    });
+
+    const { checkoutUrl } = await res.json();
+
+    // Redirect to Dodo Payments checkout
+    window.location.href = checkoutUrl;
+  });
+});
+```
+
+---
+
+## Step 6: Display Credit Balance
+
+Show users their remaining balance with a badge:
+
+```html
+<div class="credits-badge" id="creditsBadge">
+  <span>✨</span>
+  <span><span id="creditsCount">500</span> chars</span>
+</div>
+```
+
+```javascript
+function updateCreditsDisplay() {
+  const credits = parseInt(localStorage.getItem('credits') || '500');
+  const display = document.getElementById('creditsCount');
+
+  // Format large numbers (10000 → 10K)
+  if (credits >= 1000) {
+    display.textContent = (credits / 1000).toFixed(credits % 1000 === 0 ? 0 : 1) + 'K';
+  } else {
+    display.textContent = credits;
+  }
+
+  // Color code based on balance
+  const badge = document.getElementById('creditsBadge');
+  if (credits <= 0) {
+    badge.style.borderColor = '#fca5a5'; // Red
+  } else if (credits < 100) {
+    badge.style.borderColor = '#fcd34d'; // Yellow
+  } else {
+    badge.style.borderColor = ''; // Default
+  }
+}
+```
+
+---
+
+## Deployment
+
+### Environment Variables
+
+Set these in your Vercel dashboard:
+
+```bash
+DODO_PAYMENTS_API_KEY=your_api_key_here
+DODO_ENV=test  # or 'live' for production
+ELEVENLABS_API_KEY=your_elevenlabs_key
+```
+
+### Vercel Configuration
+
+```json vercel.json
+{
+  "framework": null,
+  "buildCommand": "",
+  "installCommand": "npm install",
+  "outputDirectory": "public"
+}
+```
+
+---
+
+## Testing
+
+Use Dodo's test card to simulate payments:
+
+| Field | Value |
+|-------|-------|
+| Card Number | `4242 4242 4242 4242` |
+| Expiry | Any future date |
+| CVC | Any 3 digits |
+
+---
+
+## Complete Source Code
+
+<Card title="GitHub Repository" icon="github" href="https://github.com/aainanarang29/chirpify-ai">
+  View the complete source code for Chirpify AI
+</Card>
+
+## Live Demo
+
+<Card title="Try Chirpify AI" icon="play" href="https://chirpify-ai.vercel.app">
+  Try the live demo with 500 free characters
+</Card>
+
+---
+
+## Key Takeaways
+
+<CardGroup cols={2}>
+  <Card title="payment_link: true" icon="link">
+    Always include this parameter to get a checkout URL from Dodo Payments
+  </Card>
+  <Card title="Client-side Credits" icon="database">
+    Use localStorage for simple credit tracking (use a database for production)
+  </Card>
+  <Card title="Return URL Parameters" icon="arrow-right">
+    Pass credit amount in the return URL to update balance after payment
+  </Card>
+  <Card title="Graceful Degradation" icon="shield">
+    Always check credits before API calls and show clear upgrade prompts
+  </Card>
+</CardGroup>

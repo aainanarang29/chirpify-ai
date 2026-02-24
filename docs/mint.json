@@ -1,0 +1,49 @@
+{
+  "name": "Chirpify AI",
+  "logo": {
+    "dark": "/logo-dark.svg",
+    "light": "/logo-light.svg"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#8B5CF6",
+    "light": "#A78BFA",
+    "dark": "#7C3AED",
+    "anchors": {
+      "from": "#8B5CF6",
+      "to": "#EC4899"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/aainanarang29/chirpify-ai"
+    },
+    {
+      "name": "Live Demo",
+      "url": "https://chirpify-ai.vercel.app"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Try Chirpify",
+    "url": "https://chirpify-ai.vercel.app"
+  },
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart"
+      ]
+    },
+    {
+      "group": "Cookbook",
+      "pages": [
+        "cookbook/build-chirpify"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/aainanarang29/chirpify-ai"
+  }
+}
