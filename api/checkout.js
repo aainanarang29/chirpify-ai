@@ -47,12 +47,13 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        payment_link: true,
         billing: {
-          city: '',
+          city: 'San Francisco',
           country: 'US',
-          state: '',
-          street: '',
-          zipcode: '',
+          state: 'CA',
+          street: '123 Main St',
+          zipcode: '94102',
         },
         customer: {
           email: 'customer@chirpify.ai',
