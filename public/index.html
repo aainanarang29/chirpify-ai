@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chirpify AI — Text to Speech</title>
+  <title>Chirpify AI - Text to Speech</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    /* ───── DESIGN TOKENS ───── */
+    /* DESIGN TOKENS */
     :root {
       --teal:        #0d9488;
       --teal-light:  #5eead4;
@@ -34,7 +34,7 @@
       --radius-xs:   12px;
     }
 
-    /* ───── RESET & BASE ───── */
+    /* RESET & BASE */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -46,7 +46,7 @@
       position: relative;
     }
 
-    /* ───── ANIMATED ABSTRACT BACKGROUND ───── */
+    /* ANIMATED ABSTRACT BACKGROUND */
     .bg-shapes {
       position: fixed;
       top: 0;
@@ -143,7 +143,7 @@
       }
     }
 
-    /* ───── ENTRANCE ANIMATIONS ───── */
+    /* ENTRANCE ANIMATIONS */
     @keyframes fadeInUp {
       from {
         opacity: 0;
@@ -186,7 +186,7 @@
       animation: fadeInUp 0.6s ease-out 0.4s both;
     }
 
-    /* ───── CLAY MIXIN ───── */
+    /* CLAY MIXIN */
     .clay {
       background: var(--bg-card);
       border: 2.5px solid var(--border);
@@ -218,14 +218,14 @@
       border-color: var(--mint-light);
     }
 
-    /* ───── LAYOUT ───── */
+    /* LAYOUT */
     .container {
       max-width: 640px;
       margin: 0 auto;
       padding: 24px 20px 40px;
     }
 
-    /* ───── HEADER ───── */
+    /* HEADER */
     header {
       text-align: center;
       padding: 32px 0 8px;
@@ -285,7 +285,7 @@
       margin-top: 4px;
     }
 
-    /* ───── VOICE SELECTOR ───── */
+    /* VOICE SELECTOR */
     .voice-section {
       margin-top: 28px;
     }
@@ -366,7 +366,7 @@
       font-weight: 600;
     }
 
-    /* ───── TEXT INPUT ───── */
+    /* TEXT INPUT */
     .input-section {
       margin-top: 24px;
     }
@@ -440,7 +440,7 @@
       100% { transform: scale(1) rotate(0deg); }
     }
 
-    /* ───── SPEAK BUTTON ───── */
+    /* SPEAK BUTTON */
     .speak-btn {
       display: flex;
       align-items: center;
@@ -514,7 +514,7 @@
       75% { transform: scale(1.1); }
     }
 
-    /* ───── LOADING STATE ───── */
+    /* LOADING STATE */
     .loading-section {
       display: none;
       text-align: center;
@@ -572,7 +572,7 @@
       font-size: 0.95rem;
     }
 
-    /* ───── AUDIO PLAYER ───── */
+    /* AUDIO PLAYER */
     .player-section {
       display: none;
       margin-top: 24px;
@@ -700,37 +700,38 @@
       min-width: 36px;
     }
 
-    /* ───── CREDITS BADGE ───── */
-    .credits-badge {
+    /* BUY CREDITS BUTTON */
+    .buy-credits-btn {
       position: fixed;
-      top: 16px;
+      top: 56px;
       right: 16px;
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 16px;
+      padding: 12px 20px;
       border-radius: var(--radius-sm);
-      background: var(--bg-card);
-      border: 2.5px solid var(--border);
-      box-shadow: 4px 4px 12px var(--shadow-dark);
-      font-weight: 700;
+      background: linear-gradient(135deg, var(--lavender) 0%, #8b5cf6 100%);
+      border: none;
+      box-shadow: 4px 4px 16px var(--shadow-lavender);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
       font-size: 0.85rem;
-      color: var(--text);
+      color: white;
       cursor: pointer;
       transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
       z-index: 100;
       animation: fadeInScale 0.5s ease-out;
     }
-    .credits-badge:hover {
-      transform: scale(1.05);
-      border-color: var(--lavender);
+    .buy-credits-btn:hover {
+      transform: scale(1.05) translateY(-2px);
+      box-shadow: 6px 6px 24px var(--shadow-lavender);
     }
-    .credits-badge .count {
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--teal);
+    .buy-credits-btn svg {
+      width: 18px;
+      height: 18px;
     }
 
-    /* ───── PRICING MODAL ───── */
+    /* PRICING MODAL */
     .pricing-overlay {
       position: fixed;
       inset: 0;
@@ -792,14 +793,22 @@
       cursor: pointer;
       transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
       background: var(--bg-card);
+      box-shadow: 4px 4px 12px var(--shadow-dark);
     }
     .pricing-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--teal-light);
+      transform: translateY(-6px) scale(1.03);
+      border-color: var(--teal);
+      background: linear-gradient(135deg, var(--teal-pale), #fff);
+      box-shadow: 8px 8px 24px var(--shadow-dark), 0 0 0 2px var(--teal-light);
     }
     .pricing-card.popular {
       border-color: var(--lavender);
       background: linear-gradient(135deg, var(--lavender-pale), #fff);
+    }
+    .pricing-card.popular:hover {
+      border-color: #7c3aed;
+      background: linear-gradient(135deg, var(--lavender-light), var(--lavender-pale));
+      box-shadow: 8px 8px 24px var(--shadow-lavender), 0 0 0 2px var(--lavender);
     }
     .pricing-card .amount {
       font-size: 1.8rem;
@@ -846,7 +855,7 @@
       color: var(--text);
     }
 
-    /* ───── STATS ───── */
+    /* STATS */
     .stats-bar {
       display: flex;
       justify-content: center;
@@ -881,7 +890,7 @@
       color: var(--text-muted);
     }
 
-    /* ───── FOOTER ───── */
+    /* FOOTER */
     footer {
       text-align: center;
       margin-top: 32px;
@@ -917,7 +926,7 @@
       font-weight: 600;
     }
 
-    /* ───── NOTE CONFETTI ───── */
+    /* NOTE CONFETTI */
     .note {
       position: fixed;
       font-size: 1.4rem;
@@ -931,7 +940,7 @@
       100% { opacity: 0; transform: translateY(-300px) rotate(360deg) scale(0.3); }
     }
 
-    /* ───── MINI BIRDS (EASTER EGG) ───── */
+    /* MINI BIRDS (EASTER EGG) */
     .mini-bird {
       position: fixed;
       font-size: 1.8rem;
@@ -946,7 +955,7 @@
       100% { opacity: 0; transform: translate(calc(var(--dx) * 2), -300px) rotate(360deg) scale(0.3); }
     }
 
-    /* ───── ERROR ───── */
+    /* ERROR */
     .error-toast {
       position: fixed;
       bottom: 24px;
@@ -967,15 +976,60 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* ───── RESPONSIVE ───── */
+    /* DODO BANNER */
+    .dodo-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      z-index: 200;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    .dodo-banner a {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: opacity 0.2s;
+    }
+    .dodo-banner a:hover {
+      opacity: 0.8;
+    }
+    .dodo-logo {
+      height: 20px;
+      width: auto;
+    }
+
+    body {
+      padding-top: 44px;
+    }
+
+    /* RESPONSIVE */
     @media (max-width: 480px) {
       h1 { font-size: 1.7rem; }
       .voice-grid { grid-template-columns: repeat(3, 1fr); }
       .stats-bar { gap: 16px; }
+      .dodo-banner { font-size: 0.7rem; padding: 8px 12px; }
     }
   </style>
 </head>
 <body>
+  <!-- DODO PAYMENTS BANNER -->
+  <div class="dodo-banner">
+    <span>Payments powered by</span>
+    <a href="https://dodopayments.com" target="_blank">
+      <img src="https://cdn.brandfetch.io/idFUwMRl4j/theme/light/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1762305034522" alt="Dodo Payments" class="dodo-logo" />
+    </a>
+  </div>
+
   <!-- ANIMATED ABSTRACT BACKGROUND -->
   <div class="bg-shapes">
     <div class="bg-shape"></div>
@@ -986,11 +1040,15 @@
     <div class="bg-shape"></div>
   </div>
 
-  <!-- CREDITS BADGE -->
-  <div class="credits-badge" id="creditsBadge">
-    <span>✨</span>
-    <span><span class="count" id="creditsCount">500</span> chars</span>
-  </div>
+  <!-- BUY CREDITS BUTTON -->
+  <button class="buy-credits-btn" id="buyCreditsBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="16"/>
+      <line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    Buy Credits
+  </button>
 
   <!-- PRICING MODAL -->
   <div class="pricing-overlay" id="pricingOverlay">
@@ -1165,7 +1223,7 @@
         <div class="stat-label">Characters</div>
       </div>
       <div class="stat-item">
-        <div class="stat-value" id="statFav">—</div>
+        <div class="stat-value" id="statFav">-</div>
         <div class="stat-label">Fav Voice</div>
       </div>
     </div>
@@ -1214,8 +1272,7 @@
     const statsBar     = $('statsBar');
     const errorToast   = $('errorToast');
     const birdIcon     = $('birdIcon');
-    const creditsBadge = $('creditsBadge');
-    const creditsCount = $('creditsCount');
+    const buyCreditsBtn = $('buyCreditsBtn');
     const pricingOverlay = $('pricingOverlay');
     const pricingClose = $('pricingClose');
 
@@ -1226,20 +1283,7 @@
     }
 
     function updateCreditsDisplay() {
-      creditsCount.textContent = formatNumber(credits);
       localStorage.setItem('chirpify_characters', credits.toString());
-
-      // Update badge color based on credits
-      if (credits <= 0) {
-        creditsBadge.style.borderColor = '#fca5a5';
-        creditsBadge.style.background = '#fff1f2';
-      } else if (credits < 100) {
-        creditsBadge.style.borderColor = '#fcd34d';
-        creditsBadge.style.background = '#fffbeb';
-      } else {
-        creditsBadge.style.borderColor = '';
-        creditsBadge.style.background = '';
-      }
     }
 
     // Check URL for successful payment
@@ -1261,7 +1305,7 @@
     updateCreditsDisplay();
 
     /* ── PRICING MODAL ── */
-    creditsBadge.addEventListener('click', () => {
+    buyCreditsBtn.addEventListener('click', () => {
       pricingOverlay.classList.add('show');
     });
 
@@ -1487,7 +1531,7 @@
       $('statChirps').textContent = stats.chirps;
       $('statChars').textContent = stats.chars.toLocaleString();
       const fav = Object.entries(stats.voices).sort((a, b) => b[1] - a[1])[0];
-      $('statFav').textContent = fav ? fav[0] : '—';
+      $('statFav').textContent = fav ? fav[0] : '-';
     }
 
     /* ── NOTE CONFETTI ── */
