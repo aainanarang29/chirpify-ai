@@ -13,6 +13,8 @@
   "type": "module",
   "dependencies": {
     "@elevenlabs/elevenlabs-js": "^2.36.0",
+    "dodopayments": "^2.20.0",
+    "dodopayments-checkout": "^1.8.0",
     "express": "^5.2.1"
   }
 }

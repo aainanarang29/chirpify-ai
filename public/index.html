@@ -700,6 +700,152 @@
       min-width: 36px;
     }
 
+    /* ───── CREDITS BADGE ───── */
+    .credits-badge {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      border: 2.5px solid var(--border);
+      box-shadow: 4px 4px 12px var(--shadow-dark);
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 100;
+      animation: fadeInScale 0.5s ease-out;
+    }
+    .credits-badge:hover {
+      transform: scale(1.05);
+      border-color: var(--lavender);
+    }
+    .credits-badge .count {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--teal);
+    }
+
+    /* ───── PRICING MODAL ───── */
+    .pricing-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(19, 78, 74, 0.4);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .pricing-overlay.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .pricing-modal {
+      background: var(--bg-card);
+      border: 3px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 8px 8px 32px var(--shadow-dark);
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .pricing-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .pricing-header h2 {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .pricing-header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .pricing-card {
+      padding: 20px 12px;
+      border: 2.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background: var(--bg-card);
+    }
+    .pricing-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--teal-light);
+    }
+    .pricing-card.popular {
+      border-color: var(--lavender);
+      background: linear-gradient(135deg, var(--lavender-pale), #fff);
+    }
+    .pricing-card .amount {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--teal);
+    }
+    .pricing-card .credits {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .pricing-card .price {
+      margin-top: 8px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .pricing-card .tag {
+      margin-top: 6px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--lavender);
+      text-transform: uppercase;
+    }
+
+    .pricing-close {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .pricing-close:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+
     /* ───── STATS ───── */
     .stats-bar {
       display: flex;
@@ -838,6 +984,42 @@
     <div class="bg-shape"></div>
     <div class="bg-shape"></div>
     <div class="bg-shape"></div>
+  </div>
+
+  <!-- CREDITS BADGE -->
+  <div class="credits-badge" id="creditsBadge">
+    <span>🎫</span>
+    <span><span class="count" id="creditsCount">3</span> chirps left</span>
+  </div>
+
+  <!-- PRICING MODAL -->
+  <div class="pricing-overlay" id="pricingOverlay">
+    <div class="pricing-modal">
+      <div class="pricing-header">
+        <h2>Get More Chirps 🐦</h2>
+        <p>Choose a pack and keep the conversation going</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="pricing-card" data-pack="starter">
+          <div class="amount">10</div>
+          <div class="credits">chirps</div>
+          <div class="price">$2</div>
+        </div>
+        <div class="pricing-card popular" data-pack="pro">
+          <div class="amount">50</div>
+          <div class="credits">chirps</div>
+          <div class="price">$8</div>
+          <div class="tag">Most Popular</div>
+        </div>
+        <div class="pricing-card" data-pack="unlimited">
+          <div class="amount">200</div>
+          <div class="credits">chirps</div>
+          <div class="price">$25</div>
+          <div class="tag">Best Value</div>
+        </div>
+      </div>
+      <button class="pricing-close" id="pricingClose">Maybe Later</button>
+    </div>
   </div>
 
   <div class="container">
@@ -1010,6 +1192,7 @@
     let selectedVoice = 'george';
     let stats = { chirps: 0, chars: 0, voices: {} };
     let isPlaying = false;
+    let credits = parseInt(localStorage.getItem('chirpify_credits') || '3');
 
     /* ── DOM ── */
     const $ = id => document.getElementById(id);
@@ -1031,6 +1214,89 @@
     const statsBar     = $('statsBar');
     const errorToast   = $('errorToast');
     const birdIcon     = $('birdIcon');
+    const creditsBadge = $('creditsBadge');
+    const creditsCount = $('creditsCount');
+    const pricingOverlay = $('pricingOverlay');
+    const pricingClose = $('pricingClose');
+
+    /* ── CREDITS ── */
+    function updateCreditsDisplay() {
+      creditsCount.textContent = credits;
+      localStorage.setItem('chirpify_credits', credits.toString());
+    }
+
+    // Check URL for successful payment
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      const addedCredits = parseInt(urlParams.get('credits') || '0');
+      if (addedCredits > 0) {
+        credits += addedCredits;
+        updateCreditsDisplay();
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+        // Show success message
+        setTimeout(() => {
+          showSuccess(`🎉 ${addedCredits} chirps added to your account!`);
+        }, 500);
+      }
+    }
+
+    updateCreditsDisplay();
+
+    /* ── PRICING MODAL ── */
+    creditsBadge.addEventListener('click', () => {
+      pricingOverlay.classList.add('show');
+    });
+
+    pricingClose.addEventListener('click', () => {
+      pricingOverlay.classList.remove('show');
+    });
+
+    pricingOverlay.addEventListener('click', (e) => {
+      if (e.target === pricingOverlay) {
+        pricingOverlay.classList.remove('show');
+      }
+    });
+
+    document.querySelectorAll('.pricing-card').forEach(card => {
+      card.addEventListener('click', async () => {
+        const pack = card.dataset.pack;
+        card.style.opacity = '0.7';
+        card.style.pointerEvents = 'none';
+
+        try {
+          const res = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pack })
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Checkout failed');
+
+          // Redirect to Dodo Payments checkout
+          window.location.href = data.checkoutUrl;
+        } catch (err) {
+          showError(err.message);
+          card.style.opacity = '1';
+          card.style.pointerEvents = 'auto';
+        }
+      });
+    });
+
+    function showSuccess(msg) {
+      errorToast.textContent = msg;
+      errorToast.style.borderColor = '#86efac';
+      errorToast.style.background = '#f0fdf4';
+      errorToast.style.color = '#16a34a';
+      errorToast.classList.add('show');
+      setTimeout(() => {
+        errorToast.classList.remove('show');
+        errorToast.style.borderColor = '';
+        errorToast.style.background = '';
+        errorToast.style.color = '';
+      }, 4000);
+    }
 
     /* ── WAVE BARS ── */
     for (let i = 0; i < 32; i++) {
@@ -1091,6 +1357,12 @@
       const text = textInput.value.trim();
       if (!text) return;
 
+      // Check credits
+      if (credits <= 0) {
+        pricingOverlay.classList.add('show');
+        return;
+      }
+
       speakBtn.disabled = true;
       playerSection.classList.remove('show');
       loadingSection.classList.add('show');
@@ -1106,6 +1378,10 @@
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Something went wrong');
+
+        // Deduct credit
+        credits--;
+        updateCreditsDisplay();
 
         // Set audio
         audioEl.src = `data:audio/mpeg;base64,${data.audio}`;
