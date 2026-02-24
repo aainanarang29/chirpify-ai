@@ -700,35 +700,80 @@
       min-width: 36px;
     }
 
-    /* BUY CREDITS BUTTON */
-    .buy-credits-btn {
+    /* CREDITS CONTAINER */
+    .credits-container {
       position: fixed;
       top: 56px;
       right: 16px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px 20px;
+      gap: 0;
+      z-index: 100;
+      animation: fadeInScale 0.5s ease-out;
       border-radius: var(--radius-sm);
+      overflow: hidden;
+      box-shadow: 4px 4px 16px var(--shadow-dark);
+    }
+
+    .credits-count {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 14px;
+      background: var(--bg-card);
+      border: 2.5px solid var(--border);
+      border-right: none;
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .credits-number {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--teal);
+      font-weight: 700;
+    }
+    .credits-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+    .credits-count.low {
+      border-color: #fcd34d;
+      background: #fffbeb;
+    }
+    .credits-count.low .credits-number {
+      color: #f59e0b;
+    }
+    .credits-count.empty {
+      border-color: #fca5a5;
+      background: #fff1f2;
+    }
+    .credits-count.empty .credits-number {
+      color: #ef4444;
+    }
+
+    /* BUY CREDITS BUTTON */
+    .buy-credits-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
       background: linear-gradient(135deg, var(--lavender) 0%, #8b5cf6 100%);
-      border: none;
-      box-shadow: 4px 4px 16px var(--shadow-lavender);
+      border: 2.5px solid var(--lavender);
+      border-left: none;
       font-family: 'Nunito', sans-serif;
       font-weight: 800;
       font-size: 0.85rem;
       color: white;
       cursor: pointer;
       transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-      z-index: 100;
-      animation: fadeInScale 0.5s ease-out;
     }
     .buy-credits-btn:hover {
-      transform: scale(1.05) translateY(-2px);
-      box-shadow: 6px 6px 24px var(--shadow-lavender);
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     }
     .buy-credits-btn svg {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
     }
 
     /* PRICING MODAL */
@@ -1040,15 +1085,21 @@
     <div class="bg-shape"></div>
   </div>
 
-  <!-- BUY CREDITS BUTTON -->
-  <button class="buy-credits-btn" id="buyCreditsBtn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="12" y1="8" x2="12" y2="16"/>
-      <line x1="8" y1="12" x2="16" y2="12"/>
-    </svg>
-    Buy Credits
-  </button>
+  <!-- CREDITS & BUY BUTTON -->
+  <div class="credits-container" id="creditsContainer">
+    <div class="credits-count" id="creditsCount">
+      <span class="credits-number">500</span>
+      <span class="credits-label">chars</span>
+    </div>
+    <button class="buy-credits-btn" id="buyCreditsBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="16"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      Buy Credits
+    </button>
+  </div>
 
   <!-- PRICING MODAL -->
   <div class="pricing-overlay" id="pricingOverlay">
@@ -1273,6 +1324,8 @@
     const errorToast   = $('errorToast');
     const birdIcon     = $('birdIcon');
     const buyCreditsBtn = $('buyCreditsBtn');
+    const creditsCount = $('creditsCount');
+    const creditsNumber = creditsCount.querySelector('.credits-number');
     const pricingOverlay = $('pricingOverlay');
     const pricingClose = $('pricingClose');
 
@@ -1284,6 +1337,17 @@
 
     function updateCreditsDisplay() {
       localStorage.setItem('chirpify_characters', credits.toString());
+
+      // Update display
+      creditsNumber.textContent = formatNumber(credits);
+
+      // Update styling based on credits level
+      creditsCount.classList.remove('low', 'empty');
+      if (credits <= 0) {
+        creditsCount.classList.add('empty');
+      } else if (credits < 100) {
+        creditsCount.classList.add('low');
+      }
     }
 
     // Check URL for successful payment
