@@ -40,13 +40,150 @@
     body {
       font-family: 'Nunito', sans-serif;
       background: var(--bg);
-      background-image:
-        radial-gradient(ellipse at 20% 50%, rgba(167,139,250,0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(52,211,153,0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 80%, rgba(56,189,248,0.06) 0%, transparent 50%);
       color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ───── ANIMATED ABSTRACT BACKGROUND ───── */
+    .bg-shapes {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .bg-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0.5;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .bg-shape:nth-child(1) {
+      width: 400px;
+      height: 400px;
+      background: linear-gradient(135deg, var(--lavender-pale), var(--lavender-light));
+      top: -100px;
+      left: -100px;
+      animation-delay: 0s;
+      animation-duration: 25s;
+    }
+
+    .bg-shape:nth-child(2) {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, var(--teal-pale), var(--mint-light));
+      top: 50%;
+      right: -80px;
+      animation-delay: -5s;
+      animation-duration: 20s;
+    }
+
+    .bg-shape:nth-child(3) {
+      width: 250px;
+      height: 250px;
+      background: linear-gradient(135deg, var(--mint-pale), var(--teal-light));
+      bottom: 10%;
+      left: 10%;
+      animation-delay: -10s;
+      animation-duration: 22s;
+    }
+
+    .bg-shape:nth-child(4) {
+      width: 350px;
+      height: 350px;
+      background: linear-gradient(135deg, rgba(244, 114, 182, 0.3), var(--lavender-pale));
+      top: 30%;
+      left: 50%;
+      animation-delay: -7s;
+      animation-duration: 28s;
+    }
+
+    .bg-shape:nth-child(5) {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(135deg, var(--sky), var(--teal-light));
+      bottom: -50px;
+      right: 20%;
+      animation-delay: -3s;
+      animation-duration: 18s;
+      opacity: 0.4;
+    }
+
+    .bg-shape:nth-child(6) {
+      width: 180px;
+      height: 180px;
+      background: linear-gradient(135deg, var(--pink), var(--lavender-light));
+      top: 15%;
+      right: 25%;
+      animation-delay: -12s;
+      animation-duration: 24s;
+      opacity: 0.35;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+      }
+      25% {
+        transform: translate(30px, -30px) rotate(5deg) scale(1.05);
+      }
+      50% {
+        transform: translate(-20px, 20px) rotate(-5deg) scale(0.95);
+      }
+      75% {
+        transform: translate(20px, 10px) rotate(3deg) scale(1.02);
+      }
+    }
+
+    /* ───── ENTRANCE ANIMATIONS ───── */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .container {
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    header {
+      animation: fadeInScale 0.6s ease-out 0.1s both;
+    }
+
+    .voice-section {
+      animation: fadeInUp 0.6s ease-out 0.2s both;
+    }
+
+    .input-section {
+      animation: fadeInUp 0.6s ease-out 0.3s both;
+    }
+
+    .speak-btn {
+      animation: fadeInUp 0.6s ease-out 0.4s both;
     }
 
     /* ───── CLAY MIXIN ───── */
@@ -108,9 +245,17 @@
       cursor: pointer;
       filter: drop-shadow(2px 3px 4px var(--shadow-dark));
       transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: gentleFloat 3s ease-in-out infinite;
     }
+
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
     .bird-icon:hover {
       transform: rotate(-10deg) scale(1.1);
+      animation-play-state: paused;
     }
     .bird-icon:active {
       transform: rotate(15deg) scale(0.9);
@@ -120,10 +265,17 @@
       font-size: 2.2rem;
       font-weight: 900;
       background: linear-gradient(135deg, var(--teal) 0%, var(--lavender) 50%, var(--pink) 100%);
+      background-size: 200% 200%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       letter-spacing: -0.5px;
+      animation: gradientShift 4s ease-in-out infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
 
     .tagline {
@@ -170,6 +322,9 @@
       transform: translateY(-3px) scale(1.03);
       border-color: var(--teal-light);
     }
+    .voice-btn:hover .voice-emoji {
+      animation: wiggle 0.5s ease-in-out;
+    }
     .voice-btn.active {
       background: linear-gradient(135deg, var(--teal-pale), var(--lavender-pale));
       border-color: var(--lavender);
@@ -179,11 +334,26 @@
         inset -2px -2px 5px var(--shadow-lavender),
         5px 5px 16px var(--shadow-lavender);
     }
+    .voice-btn.active .voice-emoji {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-10deg); }
+      75% { transform: rotate(10deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
 
     .voice-emoji {
       font-size: 1.6rem;
       display: block;
       margin-bottom: 4px;
+      transition: transform 0.3s ease;
     }
     .voice-name {
       font-size: 0.75rem;
@@ -204,6 +374,15 @@
     .text-card {
       padding: 0;
       overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .text-card:focus-within {
+      transform: scale(1.01);
+      box-shadow:
+        inset 4px 4px 8px rgba(255,255,255,0.9),
+        inset -2px -2px 6px var(--shadow-lavender),
+        8px 8px 24px var(--shadow-lavender),
+        -2px -2px 8px rgba(255,255,255,0.6);
     }
 
     textarea {
@@ -219,6 +398,7 @@
       color: var(--text);
       background: transparent;
       line-height: 1.6;
+      transition: background 0.3s ease;
     }
     textarea::placeholder {
       color: var(--text-muted);
@@ -248,6 +428,16 @@
       display: flex;
       gap: 4px;
       font-size: 1rem;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .chirp-meter.pop {
+      animation: chirpPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes chirpPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.4) rotate(10deg); }
+      100% { transform: scale(1) rotate(0deg); }
     }
 
     /* ───── SPEAK BUTTON ───── */
@@ -273,6 +463,26 @@
         inset 3px 3px 6px rgba(255,255,255,0.2),
         inset -2px -2px 6px rgba(0,0,0,0.1),
         6px 6px 20px var(--shadow-dark);
+      position: relative;
+      overflow: hidden;
+    }
+    .speak-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+      );
+      transition: left 0.5s ease;
+    }
+    .speak-btn:hover:not(:disabled)::before {
+      left: 100%;
     }
     .speak-btn:hover:not(:disabled) {
       transform: translateY(-3px) scale(1.02);
@@ -291,6 +501,17 @@
     .speak-btn svg {
       width: 22px;
       height: 22px;
+      transition: transform 0.3s ease;
+    }
+    .speak-btn:hover:not(:disabled) svg {
+      animation: micBounce 0.6s ease-in-out;
+    }
+
+    @keyframes micBounce {
+      0%, 100% { transform: scale(1); }
+      25% { transform: scale(0.9); }
+      50% { transform: scale(1.2); }
+      75% { transform: scale(1.1); }
     }
 
     /* ───── LOADING STATE ───── */
@@ -299,9 +520,21 @@
       text-align: center;
       margin-top: 24px;
       padding: 28px;
+      opacity: 0;
+      transform: translateY(20px);
     }
 
-    .loading-section.show { display: block; }
+    .loading-section.show {
+      display: block;
+      animation: slideIn 0.4s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
     .loading-dots {
       display: flex;
@@ -344,9 +577,21 @@
       display: none;
       margin-top: 24px;
       padding: 24px;
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
     }
 
-    .player-section.show { display: block; }
+    .player-section.show {
+      display: block;
+      animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes popIn {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
 
     .player-header {
       display: flex;
@@ -405,14 +650,29 @@
       box-shadow:
         inset 3px 3px 6px rgba(255,255,255,0.8),
         4px 4px 12px var(--shadow-dark);
+      animation: subtlePulse 2s ease-in-out infinite;
     }
+
+    @keyframes subtlePulse {
+      0%, 100% { box-shadow: inset 3px 3px 6px rgba(255,255,255,0.8), 4px 4px 12px var(--shadow-dark); }
+      50% { box-shadow: inset 3px 3px 6px rgba(255,255,255,0.8), 4px 4px 20px var(--shadow-dark), 0 0 20px var(--shadow-light); }
+    }
+
     .play-btn:hover {
       transform: scale(1.08);
+      animation-play-state: paused;
+    }
+    .play-btn:active {
+      transform: scale(0.95);
     }
     .play-btn svg {
       width: 20px;
       height: 20px;
       fill: var(--teal);
+      transition: transform 0.2s ease;
+    }
+    .play-btn:hover svg {
+      transform: scale(1.1);
     }
 
     .progress-bar {
@@ -447,16 +707,25 @@
       gap: 24px;
       margin-top: 24px;
       padding: 16px;
+      animation: fadeInUp 0.5s ease-out;
     }
 
     .stat-item {
       text-align: center;
+      transition: transform 0.3s ease;
+    }
+    .stat-item:hover {
+      transform: scale(1.05);
     }
     .stat-value {
       font-family: 'JetBrains Mono', monospace;
       font-size: 1.3rem;
       font-weight: 700;
       color: var(--teal);
+      transition: color 0.3s ease;
+    }
+    .stat-item:hover .stat-value {
+      color: var(--lavender);
     }
     .stat-label {
       font-size: 0.65rem;
@@ -472,6 +741,7 @@
       margin-top: 32px;
       padding-top: 20px;
       border-top: 2px solid var(--border);
+      animation: fadeInUp 0.6s ease-out 0.5s both;
     }
 
     .footer-text {
@@ -483,6 +753,12 @@
       color: var(--lavender);
       text-decoration: none;
       font-weight: 700;
+      transition: color 0.3s ease, transform 0.3s ease;
+      display: inline-block;
+    }
+    .footer-text a:hover {
+      color: var(--teal);
+      transform: translateY(-2px);
     }
 
     .powered-by {
@@ -554,6 +830,16 @@
   </style>
 </head>
 <body>
+  <!-- ANIMATED ABSTRACT BACKGROUND -->
+  <div class="bg-shapes">
+    <div class="bg-shape"></div>
+    <div class="bg-shape"></div>
+    <div class="bg-shape"></div>
+    <div class="bg-shape"></div>
+    <div class="bg-shape"></div>
+    <div class="bg-shape"></div>
+  </div>
+
   <div class="container">
 
     <!-- HEADER -->
@@ -766,15 +1052,22 @@
     /* ── TEXT INPUT ── */
     const chirpStages = ['🥚', '🐣', '🐥', '🐦', '🐦‍⬛', '🔥'];
 
+    let lastStage = 0;
     textInput.addEventListener('input', () => {
       const len = textInput.value.length;
       charCount.textContent = `${len} / 500`;
       charCount.className = 'char-count' + (len > 450 ? ' danger' : len > 350 ? ' warn' : '');
       speakBtn.disabled = len === 0;
 
-      // Chirp meter
+      // Chirp meter with animation
       const stage = Math.min(Math.floor(len / 100), 5);
-      chirpMeter.textContent = chirpStages[stage];
+      if (stage !== lastStage) {
+        chirpMeter.textContent = chirpStages[stage];
+        chirpMeter.classList.remove('pop');
+        void chirpMeter.offsetWidth; // Force reflow
+        chirpMeter.classList.add('pop');
+        lastStage = stage;
+      }
     });
 
     /* ── LOADING PHRASES ── */
