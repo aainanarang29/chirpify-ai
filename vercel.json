@@ -1,5 +1,9 @@
 {
-  "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/public/$1" }
-  ]
+  "buildCommand": "",
+  "outputDirectory": "public",
+  "functions": {
+    "api/*.js": {
+      "runtime": "@vercel/node@3"
+    }
+  }
 }
