@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chirpify AI — Text to Speech</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ───── DESIGN TOKENS ───── */
+    :root {
+      --teal:        #0d9488;
+      --teal-light:  #5eead4;
+      --teal-pale:   #ccfbf1;
+      --lavender:    #a78bfa;
+      --lavender-light: #ddd6fe;
+      --lavender-pale: #ede9fe;
+      --mint:        #34d399;
+      --mint-light:  #a7f3d0;
+      --mint-pale:   #d1fae5;
+      --sky:         #38bdf8;
+      --pink:        #f472b6;
+      --bg:          #f0fdfa;
+      --bg-card:     #ffffff;
+      --text:        #134e4a;
+      --text-light:  #5f9ea0;
+      --text-muted:  #94a3b8;
+      --border:      #99f6e4;
+      --shadow-light: rgba(94, 234, 212, 0.3);
+      --shadow-dark:  rgba(13, 148, 136, 0.15);
+      --shadow-lavender: rgba(167, 139, 250, 0.2);
+      --radius:      24px;
+      --radius-sm:   16px;
+      --radius-xs:   12px;
+    }
+
+    /* ───── RESET & BASE ───── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(167,139,250,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(52,211,153,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(56,189,248,0.06) 0%, transparent 50%);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ───── CLAY MIXIN ───── */
+    .clay {
+      background: var(--bg-card);
+      border: 2.5px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow:
+        inset 4px 4px 8px rgba(255,255,255,0.9),
+        inset -2px -2px 6px var(--shadow-light),
+        6px 6px 20px var(--shadow-dark),
+        -2px -2px 8px rgba(255,255,255,0.6);
+    }
+
+    .clay-teal {
+      background: linear-gradient(135deg, var(--teal-pale) 0%, #f0fdfa 100%);
+      border-color: var(--teal-light);
+    }
+
+    .clay-lavender {
+      background: linear-gradient(135deg, var(--lavender-pale) 0%, #faf5ff 100%);
+      border-color: var(--lavender-light);
+      box-shadow:
+        inset 4px 4px 8px rgba(255,255,255,0.9),
+        inset -2px -2px 6px var(--shadow-lavender),
+        6px 6px 20px var(--shadow-lavender),
+        -2px -2px 8px rgba(255,255,255,0.6);
+    }
+
+    .clay-mint {
+      background: linear-gradient(135deg, var(--mint-pale) 0%, #ecfdf5 100%);
+      border-color: var(--mint-light);
+    }
+
+    /* ───── LAYOUT ───── */
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+    }
+
+    /* ───── HEADER ───── */
+    header {
+      text-align: center;
+      padding: 32px 0 8px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .bird-icon {
+      width: 56px;
+      height: 56px;
+      cursor: pointer;
+      filter: drop-shadow(2px 3px 4px var(--shadow-dark));
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .bird-icon:hover {
+      transform: rotate(-10deg) scale(1.1);
+    }
+    .bird-icon:active {
+      transform: rotate(15deg) scale(0.9);
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--teal) 0%, var(--lavender) 50%, var(--pink) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    .tagline {
+      color: var(--text-light);
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* ───── VOICE SELECTOR ───── */
+    .voice-section {
+      margin-top: 28px;
+    }
+
+    .section-label {
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .voice-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .voice-btn {
+      border: 2.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      padding: 14px 6px 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow:
+        inset 3px 3px 6px rgba(255,255,255,0.8),
+        inset -1px -1px 4px var(--shadow-light),
+        4px 4px 12px var(--shadow-dark);
+    }
+    .voice-btn:hover {
+      transform: translateY(-3px) scale(1.03);
+      border-color: var(--teal-light);
+    }
+    .voice-btn.active {
+      background: linear-gradient(135deg, var(--teal-pale), var(--lavender-pale));
+      border-color: var(--lavender);
+      transform: translateY(-2px);
+      box-shadow:
+        inset 3px 3px 6px rgba(255,255,255,0.9),
+        inset -2px -2px 5px var(--shadow-lavender),
+        5px 5px 16px var(--shadow-lavender);
+    }
+
+    .voice-emoji {
+      font-size: 1.6rem;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .voice-name {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .voice-desc {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* ───── TEXT INPUT ───── */
+    .input-section {
+      margin-top: 24px;
+    }
+
+    .text-card {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: 20px;
+      border: none;
+      outline: none;
+      resize: vertical;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      background: transparent;
+      line-height: 1.6;
+    }
+    textarea::placeholder {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .input-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, rgba(204,251,241,0.3), rgba(237,233,254,0.3));
+      border-top: 1.5px solid var(--border);
+    }
+
+    .char-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: color 0.3s;
+    }
+    .char-count.warn { color: #f59e0b; }
+    .char-count.danger { color: #ef4444; }
+
+    .chirp-meter {
+      display: flex;
+      gap: 4px;
+      font-size: 1rem;
+    }
+
+    /* ───── SPEAK BUTTON ───── */
+    .speak-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      margin-top: 20px;
+      padding: 18px;
+      border: 3px solid var(--teal);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--teal) 0%, #0f766e 100%);
+      color: white;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow:
+        inset 3px 3px 6px rgba(255,255,255,0.2),
+        inset -2px -2px 6px rgba(0,0,0,0.1),
+        6px 6px 20px var(--shadow-dark);
+    }
+    .speak-btn:hover:not(:disabled) {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow:
+        inset 3px 3px 6px rgba(255,255,255,0.25),
+        inset -2px -2px 6px rgba(0,0,0,0.1),
+        8px 8px 28px var(--shadow-dark);
+    }
+    .speak-btn:active:not(:disabled) {
+      transform: translateY(1px) scale(0.98);
+    }
+    .speak-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .speak-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* ───── LOADING STATE ───── */
+    .loading-section {
+      display: none;
+      text-align: center;
+      margin-top: 24px;
+      padding: 28px;
+    }
+
+    .loading-section.show { display: block; }
+
+    .loading-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .loading-dots span {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .loading-dots span:nth-child(1) {
+      background: var(--teal);
+      animation-delay: -0.32s;
+    }
+    .loading-dots span:nth-child(2) {
+      background: var(--lavender);
+      animation-delay: -0.16s;
+    }
+    .loading-dots span:nth-child(3) {
+      background: var(--mint);
+    }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+
+    .loading-text {
+      font-weight: 700;
+      color: var(--text-light);
+      font-size: 0.95rem;
+    }
+
+    /* ───── AUDIO PLAYER ───── */
+    .player-section {
+      display: none;
+      margin-top: 24px;
+      padding: 24px;
+    }
+
+    .player-section.show { display: block; }
+
+    .player-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-weight: 800;
+      color: var(--teal);
+      font-size: 0.9rem;
+    }
+
+    .wave-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      height: 48px;
+      margin-bottom: 16px;
+    }
+
+    .wave-bar {
+      width: 5px;
+      height: 10px;
+      border-radius: 100px;
+      background: linear-gradient(180deg, var(--teal) 0%, var(--lavender) 100%);
+      transition: height 0.15s ease;
+    }
+
+    .wave-container.playing .wave-bar {
+      animation: wave 1s ease-in-out infinite;
+    }
+
+    @keyframes wave {
+      0%, 100% { height: 10px; }
+      50% { height: 40px; }
+    }
+
+    .audio-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .play-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2.5px solid var(--teal);
+      background: linear-gradient(135deg, var(--teal-pale), #fff);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow:
+        inset 3px 3px 6px rgba(255,255,255,0.8),
+        4px 4px 12px var(--shadow-dark);
+    }
+    .play-btn:hover {
+      transform: scale(1.08);
+    }
+    .play-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--teal);
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 8px;
+      border-radius: 100px;
+      background: var(--teal-pale);
+      border: 1.5px solid var(--border);
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--teal), var(--lavender));
+      transition: width 0.1s linear;
+    }
+
+    .time-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      min-width: 36px;
+    }
+
+    /* ───── STATS ───── */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 24px;
+      padding: 16px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--teal);
+    }
+    .stat-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    /* ───── FOOTER ───── */
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 2px solid var(--border);
+    }
+
+    .footer-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .footer-text a {
+      color: var(--lavender);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .powered-by {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* ───── NOTE CONFETTI ───── */
+    .note {
+      position: fixed;
+      font-size: 1.4rem;
+      pointer-events: none;
+      z-index: 999;
+      animation: noteFloat 2.5s ease-out forwards;
+    }
+
+    @keyframes noteFloat {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translateY(-300px) rotate(360deg) scale(0.3); }
+    }
+
+    /* ───── MINI BIRDS (EASTER EGG) ───── */
+    .mini-bird {
+      position: fixed;
+      font-size: 1.8rem;
+      pointer-events: none;
+      z-index: 998;
+      animation: flyAway 3s ease-out forwards;
+    }
+
+    @keyframes flyAway {
+      0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+      50% { opacity: 0.8; transform: translate(var(--dx), -120px) rotate(180deg) scale(1.2); }
+      100% { opacity: 0; transform: translate(calc(var(--dx) * 2), -300px) rotate(360deg) scale(0.3); }
+    }
+
+    /* ───── ERROR ───── */
+    .error-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      padding: 14px 24px;
+      border-radius: var(--radius-sm);
+      border: 2.5px solid #fca5a5;
+      background: #fff1f2;
+      color: #dc2626;
+      font-weight: 700;
+      font-size: 0.9rem;
+      z-index: 1000;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 4px 4px 16px rgba(220, 38, 38, 0.15);
+    }
+    .error-toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ───── RESPONSIVE ───── */
+    @media (max-width: 480px) {
+      h1 { font-size: 1.7rem; }
+      .voice-grid { grid-template-columns: repeat(3, 1fr); }
+      .stats-bar { gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <header>
+      <div class="logo-area">
+        <svg class="bird-icon" id="birdIcon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- body -->
+          <ellipse cx="50" cy="55" rx="30" ry="28" fill="#5eead4" stroke="#0d9488" stroke-width="3"/>
+          <!-- belly -->
+          <ellipse cx="50" cy="62" rx="18" ry="15" fill="#ccfbf1"/>
+          <!-- head -->
+          <circle cx="50" cy="30" r="18" fill="#a78bfa" stroke="#7c3aed" stroke-width="2.5"/>
+          <!-- eye left -->
+          <circle cx="43" cy="27" r="5" fill="white"/>
+          <circle cx="44" cy="26" r="2.5" fill="#134e4a"/>
+          <circle cx="45" cy="25" r="1" fill="white"/>
+          <!-- eye right -->
+          <circle cx="57" cy="27" r="5" fill="white"/>
+          <circle cx="58" cy="26" r="2.5" fill="#134e4a"/>
+          <circle cx="59" cy="25" r="1" fill="white"/>
+          <!-- beak -->
+          <path d="M47 33 L50 40 L53 33" fill="#f59e0b" stroke="#d97706" stroke-width="1.5" stroke-linejoin="round"/>
+          <!-- blush -->
+          <ellipse cx="37" cy="33" rx="4" ry="2.5" fill="#f9a8d4" opacity="0.5"/>
+          <ellipse cx="63" cy="33" rx="4" ry="2.5" fill="#f9a8d4" opacity="0.5"/>
+          <!-- wing left -->
+          <path d="M20 50 Q10 42 15 56 Q18 62 25 58" fill="#34d399" stroke="#059669" stroke-width="2"/>
+          <!-- wing right -->
+          <path d="M80 50 Q90 42 85 56 Q82 62 75 58" fill="#34d399" stroke="#059669" stroke-width="2"/>
+          <!-- feet -->
+          <path d="M40 82 L38 92 M40 82 L43 92 M40 82 L35 90" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M60 82 L58 92 M60 82 L63 92 M60 82 L55 90" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- head tuft -->
+          <path d="M45 14 Q48 4 50 12" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M50 13 Q53 2 55 13" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <!-- music note -->
+          <text x="72" y="18" font-size="14" fill="#f472b6" opacity="0.8">&#9834;</text>
+        </svg>
+        <h1>Chirpify AI</h1>
+      </div>
+      <p class="tagline">Chirpify your text into lifelike speech ✨</p>
+    </header>
+
+    <!-- VOICE SELECTOR -->
+    <div class="voice-section">
+      <div class="section-label">Pick a voice</div>
+      <div class="voice-grid" id="voiceGrid">
+        <button class="voice-btn active" data-voice="george">
+          <span class="voice-emoji">🎩</span>
+          <span class="voice-name">George</span>
+          <span class="voice-desc">Warm British</span>
+        </button>
+        <button class="voice-btn" data-voice="aria">
+          <span class="voice-emoji">✨</span>
+          <span class="voice-name">Aria</span>
+          <span class="voice-desc">Expressive</span>
+        </button>
+        <button class="voice-btn" data-voice="roger">
+          <span class="voice-emoji">🎙️</span>
+          <span class="voice-name">Roger</span>
+          <span class="voice-desc">Confident</span>
+        </button>
+        <button class="voice-btn" data-voice="sarah">
+          <span class="voice-emoji">🌸</span>
+          <span class="voice-name">Sarah</span>
+          <span class="voice-desc">Soft & Kind</span>
+        </button>
+        <button class="voice-btn" data-voice="charlie">
+          <span class="voice-emoji">🏄</span>
+          <span class="voice-name">Charlie</span>
+          <span class="voice-desc">Chill Aussie</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TEXT INPUT -->
+    <div class="input-section">
+      <div class="section-label">What should I say?</div>
+      <div class="text-card clay">
+        <textarea
+          id="textInput"
+          maxlength="500"
+          placeholder="Type something fun, or paste any text you want to hear spoken aloud..."
+        ></textarea>
+        <div class="input-footer">
+          <span class="char-count" id="charCount">0 / 500</span>
+          <div class="chirp-meter" id="chirpMeter">
+            <span>🥚</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPEAK BUTTON -->
+    <button class="speak-btn" id="speakBtn" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+      Chirpify it!
+    </button>
+
+    <!-- LOADING -->
+    <div class="loading-section clay clay-lavender" id="loadingSection">
+      <div class="loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="loading-text" id="loadingText">Warming up the vocal cords...</div>
+    </div>
+
+    <!-- AUDIO PLAYER -->
+    <div class="player-section clay clay-teal" id="playerSection">
+      <div class="player-header">
+        <span>🐦</span> Your chirp is ready!
+      </div>
+      <div class="wave-container" id="waveContainer">
+        <!-- wave bars generated by JS -->
+      </div>
+      <div class="audio-controls">
+        <button class="play-btn" id="playBtn">
+          <svg id="playIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+          <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none"><rect x="6" y="4" width="4" height="16" fill="var(--teal)"/><rect x="14" y="4" width="4" height="16" fill="var(--teal)"/></svg>
+        </button>
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span class="time-display" id="timeDisplay">0:00</span>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-bar clay clay-mint" id="statsBar" style="display:none">
+      <div class="stat-item">
+        <div class="stat-value" id="statChirps">0</div>
+        <div class="stat-label">Chirps</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statChars">0</div>
+        <div class="stat-label">Characters</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statFav">—</div>
+        <div class="stat-label">Fav Voice</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <p class="footer-text">
+        Voices by <a href="https://elevenlabs.io" target="_blank">ElevenLabs</a> · Payments by <a href="https://dodopayments.com" target="_blank">Dodo Payments</a>
+      </p>
+      <div class="powered-by">
+        Made with 🐦 by Chirpify AI
+      </div>
+    </footer>
+  </div>
+
+  <!-- ERROR TOAST -->
+  <div class="error-toast" id="errorToast"></div>
+
+  <!-- AUDIO ELEMENT -->
+  <audio id="audioEl"></audio>
+
+  <script>
+    /* ── STATE ── */
+    let selectedVoice = 'george';
+    let stats = { chirps: 0, chars: 0, voices: {} };
+    let isPlaying = false;
+
+    /* ── DOM ── */
+    const $ = id => document.getElementById(id);
+    const textInput    = $('textInput');
+    const charCount    = $('charCount');
+    const chirpMeter   = $('chirpMeter');
+    const speakBtn     = $('speakBtn');
+    const loadingSection = $('loadingSection');
+    const loadingText  = $('loadingText');
+    const playerSection = $('playerSection');
+    const waveContainer = $('waveContainer');
+    const playBtn      = $('playBtn');
+    const playIcon     = $('playIcon');
+    const pauseIcon    = $('pauseIcon');
+    const progressBar  = $('progressBar');
+    const progressFill = $('progressFill');
+    const timeDisplay  = $('timeDisplay');
+    const audioEl      = $('audioEl');
+    const statsBar     = $('statsBar');
+    const errorToast   = $('errorToast');
+    const birdIcon     = $('birdIcon');
+
+    /* ── WAVE BARS ── */
+    for (let i = 0; i < 32; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'wave-bar';
+      bar.style.animationDelay = `${(i * 0.05)}s`;
+      waveContainer.appendChild(bar);
+    }
+
+    /* ── VOICE SELECTION ── */
+    document.querySelectorAll('.voice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.voice-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedVoice = btn.dataset.voice;
+      });
+    });
+
+    /* ── TEXT INPUT ── */
+    const chirpStages = ['🥚', '🐣', '🐥', '🐦', '🐦‍⬛', '🔥'];
+
+    textInput.addEventListener('input', () => {
+      const len = textInput.value.length;
+      charCount.textContent = `${len} / 500`;
+      charCount.className = 'char-count' + (len > 450 ? ' danger' : len > 350 ? ' warn' : '');
+      speakBtn.disabled = len === 0;
+
+      // Chirp meter
+      const stage = Math.min(Math.floor(len / 100), 5);
+      chirpMeter.textContent = chirpStages[stage];
+    });
+
+    /* ── LOADING PHRASES ── */
+    const loadingPhrases = [
+      "Warming up the vocal cords...",
+      "Teaching the bird new words...",
+      "Fluffing up the frequencies...",
+      "Chirping at the speed of sound...",
+      "Adding a pinch of personality...",
+      "Tuning the beak harmonics...",
+      "Almost ready to sing...",
+      "Rehearsing the final take...",
+    ];
+
+    function cycleLoadingText() {
+      loadingText.textContent = loadingPhrases[Math.floor(Math.random() * loadingPhrases.length)];
+    }
+
+    /* ── SPEAK ── */
+    speakBtn.addEventListener('click', async () => {
+      const text = textInput.value.trim();
+      if (!text) return;
+
+      speakBtn.disabled = true;
+      playerSection.classList.remove('show');
+      loadingSection.classList.add('show');
+      cycleLoadingText();
+      const phraseInterval = setInterval(cycleLoadingText, 2200);
+
+      try {
+        const res = await fetch('/api/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, voice: selectedVoice })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Something went wrong');
+
+        // Set audio
+        audioEl.src = `data:audio/mpeg;base64,${data.audio}`;
+        audioEl.load();
+
+        // Update stats
+        stats.chirps++;
+        stats.chars += data.characters;
+        stats.voices[data.voice] = (stats.voices[data.voice] || 0) + 1;
+        updateStats();
+
+        // Show player
+        loadingSection.classList.remove('show');
+        playerSection.classList.add('show');
+        spawnNotes();
+
+      } catch (err) {
+        showError(err.message);
+        loadingSection.classList.remove('show');
+      } finally {
+        clearInterval(phraseInterval);
+        speakBtn.disabled = textInput.value.length === 0;
+      }
+    });
+
+    /* ── AUDIO PLAYER ── */
+    playBtn.addEventListener('click', () => {
+      if (audioEl.paused) {
+        audioEl.play();
+      } else {
+        audioEl.pause();
+      }
+    });
+
+    audioEl.addEventListener('play', () => {
+      isPlaying = true;
+      playIcon.style.display = 'none';
+      pauseIcon.style.display = 'block';
+      waveContainer.classList.add('playing');
+    });
+
+    audioEl.addEventListener('pause', () => {
+      isPlaying = false;
+      playIcon.style.display = 'block';
+      pauseIcon.style.display = 'none';
+      waveContainer.classList.remove('playing');
+    });
+
+    audioEl.addEventListener('ended', () => {
+      isPlaying = false;
+      playIcon.style.display = 'block';
+      pauseIcon.style.display = 'none';
+      waveContainer.classList.remove('playing');
+      progressFill.style.width = '0%';
+    });
+
+    audioEl.addEventListener('timeupdate', () => {
+      if (audioEl.duration) {
+        const pct = (audioEl.currentTime / audioEl.duration) * 100;
+        progressFill.style.width = `${pct}%`;
+        const s = Math.floor(audioEl.currentTime);
+        timeDisplay.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      }
+    });
+
+    progressBar.addEventListener('click', (e) => {
+      if (audioEl.duration) {
+        const rect = progressBar.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        audioEl.currentTime = pct * audioEl.duration;
+      }
+    });
+
+    /* ── STATS ── */
+    function updateStats() {
+      statsBar.style.display = 'flex';
+      $('statChirps').textContent = stats.chirps;
+      $('statChars').textContent = stats.chars.toLocaleString();
+      const fav = Object.entries(stats.voices).sort((a, b) => b[1] - a[1])[0];
+      $('statFav').textContent = fav ? fav[0] : '—';
+    }
+
+    /* ── NOTE CONFETTI ── */
+    function spawnNotes() {
+      const notes = ['♪', '♫', '♬', '🎵', '🎶', '🐦', '✨'];
+      for (let i = 0; i < 12; i++) {
+        setTimeout(() => {
+          const el = document.createElement('div');
+          el.className = 'note';
+          el.textContent = notes[Math.floor(Math.random() * notes.length)];
+          el.style.left = `${20 + Math.random() * 60}vw`;
+          el.style.top = `${40 + Math.random() * 20}vh`;
+          document.body.appendChild(el);
+          el.addEventListener('animationend', () => el.remove());
+        }, i * 120);
+      }
+    }
+
+    /* ── EASTER EGG ── */
+    birdIcon.addEventListener('click', () => {
+      const birds = ['🐦', '🐤', '🐥', '🐣', '🕊️', '🦜'];
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+          const b = document.createElement('div');
+          b.className = 'mini-bird';
+          b.textContent = birds[Math.floor(Math.random() * birds.length)];
+          const rect = birdIcon.getBoundingClientRect();
+          b.style.left = `${rect.left + rect.width / 2}px`;
+          b.style.top = `${rect.top + rect.height / 2}px`;
+          b.style.setProperty('--dx', `${(Math.random() - 0.5) * 200}px`);
+          document.body.appendChild(b);
+          b.addEventListener('animationend', () => b.remove());
+        }, i * 100);
+      }
+    });
+
+    /* ── ERROR TOAST ── */
+    function showError(msg) {
+      errorToast.textContent = `🐦 ${msg}`;
+      errorToast.classList.add('show');
+      setTimeout(() => errorToast.classList.remove('show'), 3500);
+    }
+
+    /* ── KEYBOARD SHORTCUT ── */
+    textInput.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (!speakBtn.disabled) speakBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
