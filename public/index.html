@@ -988,32 +988,32 @@
 
   <!-- CREDITS BADGE -->
   <div class="credits-badge" id="creditsBadge">
-    <span>🎫</span>
-    <span><span class="count" id="creditsCount">3</span> chirps left</span>
+    <span>✨</span>
+    <span><span class="count" id="creditsCount">500</span> chars</span>
   </div>
 
   <!-- PRICING MODAL -->
   <div class="pricing-overlay" id="pricingOverlay">
     <div class="pricing-modal">
       <div class="pricing-header">
-        <h2>Get More Chirps 🐦</h2>
-        <p>Choose a pack and keep the conversation going</p>
+        <h2>Buy Credits 🐦</h2>
+        <p>Get more characters to keep chirpifying!</p>
       </div>
       <div class="pricing-grid">
-        <div class="pricing-card" data-pack="starter">
-          <div class="amount">10</div>
-          <div class="credits">chirps</div>
-          <div class="price">$2</div>
+        <div class="pricing-card" data-pack="starter" data-chars="10000">
+          <div class="amount">10K</div>
+          <div class="credits">characters</div>
+          <div class="price">$5</div>
         </div>
-        <div class="pricing-card popular" data-pack="pro">
-          <div class="amount">50</div>
-          <div class="credits">chirps</div>
-          <div class="price">$8</div>
+        <div class="pricing-card popular" data-pack="pro" data-chars="50000">
+          <div class="amount">50K</div>
+          <div class="credits">characters</div>
+          <div class="price">$10</div>
           <div class="tag">Most Popular</div>
         </div>
-        <div class="pricing-card" data-pack="unlimited">
-          <div class="amount">200</div>
-          <div class="credits">chirps</div>
+        <div class="pricing-card" data-pack="power" data-chars="200000">
+          <div class="amount">200K</div>
+          <div class="credits">characters</div>
           <div class="price">$25</div>
           <div class="tag">Best Value</div>
         </div>
@@ -1192,7 +1192,7 @@
     let selectedVoice = 'george';
     let stats = { chirps: 0, chars: 0, voices: {} };
     let isPlaying = false;
-    let credits = parseInt(localStorage.getItem('chirpify_credits') || '3');
+    let credits = parseInt(localStorage.getItem('chirpify_characters') || '500');
 
     /* ── DOM ── */
     const $ = id => document.getElementById(id);
@@ -1220,23 +1220,40 @@
     const pricingClose = $('pricingClose');
 
     /* ── CREDITS ── */
+    function formatNumber(num) {
+      if (num >= 1000) return (num / 1000).toFixed(num % 1000 === 0 ? 0 : 1) + 'K';
+      return num.toString();
+    }
+
     function updateCreditsDisplay() {
-      creditsCount.textContent = credits;
-      localStorage.setItem('chirpify_credits', credits.toString());
+      creditsCount.textContent = formatNumber(credits);
+      localStorage.setItem('chirpify_characters', credits.toString());
+
+      // Update badge color based on credits
+      if (credits <= 0) {
+        creditsBadge.style.borderColor = '#fca5a5';
+        creditsBadge.style.background = '#fff1f2';
+      } else if (credits < 100) {
+        creditsBadge.style.borderColor = '#fcd34d';
+        creditsBadge.style.background = '#fffbeb';
+      } else {
+        creditsBadge.style.borderColor = '';
+        creditsBadge.style.background = '';
+      }
     }
 
     // Check URL for successful payment
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
-      const addedCredits = parseInt(urlParams.get('credits') || '0');
-      if (addedCredits > 0) {
-        credits += addedCredits;
+      const addedChars = parseInt(urlParams.get('characters') || '0');
+      if (addedChars > 0) {
+        credits += addedChars;
         updateCreditsDisplay();
         // Clean up URL
         window.history.replaceState({}, '', window.location.pathname);
         // Show success message
         setTimeout(() => {
-          showSuccess(`🎉 ${addedCredits} chirps added to your account!`);
+          showSuccess(`🎉 ${formatNumber(addedChars)} characters added!`);
         }, 500);
       }
     }
@@ -1357,8 +1374,17 @@
       const text = textInput.value.trim();
       if (!text) return;
 
+      const charCost = text.length;
+
       // Check credits
       if (credits <= 0) {
+        showError('Buy credits to chirpify! 🐦');
+        pricingOverlay.classList.add('show');
+        return;
+      }
+
+      if (credits < charCost) {
+        showError(`Need ${charCost} chars, you have ${credits}. Buy more!`);
         pricingOverlay.classList.add('show');
         return;
       }
@@ -1379,8 +1405,8 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Something went wrong');
 
-        // Deduct credit
-        credits--;
+        // Deduct characters based on text length
+        credits -= charCost;
         updateCreditsDisplay();
 
         // Set audio

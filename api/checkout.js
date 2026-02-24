@@ -1,44 +1,84 @@
-import DodoPayments from 'dodopayments';
-
-const client = new DodoPayments({
-  bearerToken: process.env.DODO_PAYMENTS_API_KEY,
-  environment: process.env.DODO_ENV === 'live' ? 'live_mode' : 'test_mode',
-});
-
-// Credit pack products (create these in your Dodo Payments dashboard)
+// Character credit packs for Chirpify AI
 const PRODUCTS = {
-  starter: { id: process.env.DODO_PRODUCT_STARTER, credits: 10, name: '10 Chirps' },
-  pro: { id: process.env.DODO_PRODUCT_PRO, credits: 50, name: '50 Chirps' },
-  unlimited: { id: process.env.DODO_PRODUCT_UNLIMITED, credits: 200, name: '200 Chirps' },
+  starter: {
+    id: 'pdt_0NZCiIwZqFmmRpNK6z00J',
+    characters: 10000,
+    price: 5,
+    name: 'Starter Pack'
+  },
+  pro: {
+    id: 'pdt_0NZCiKxzvABY1VnpQrCS5',
+    characters: 50000,
+    price: 10,
+    name: 'Pro Pack'
+  },
+  power: {
+    id: 'pdt_0NZCiMdfSCB8t18kVCowo',
+    characters: 200000,
+    price: 25,
+    name: 'Power Pack'
+  },
 };
+
+const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY || 'Slm9C1tmQSfrEo-k.kmerxfRVwnZkp7tN250jUaDczJiYHP_smXlL3B_RO8II2Nce';
+const DODO_BASE_URL = process.env.DODO_ENV === 'live'
+  ? 'https://live.dodopayments.com'
+  : 'https://test.dodopayments.com';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { pack, email } = req.body;
+  const { pack } = req.body;
 
   if (!pack || !PRODUCTS[pack]) {
     return res.status(400).json({ error: 'Invalid pack selected' });
   }
 
   const product = PRODUCTS[pack];
+  const returnUrl = process.env.SITE_URL || 'https://chirpify-ai.vercel.app';
 
   try {
-    const checkoutSession = await client.payments.create({
-      billing: { city: "", country: "US", state: "", street: "", zipcode: "" },
-      customer: { email: email || 'customer@example.com' },
-      product_cart: [{ product_id: product.id, quantity: 1 }],
-      return_url: `${process.env.SITE_URL || 'https://chirpify-ai.vercel.app'}?success=true&credits=${product.credits}`,
+    const response = await fetch(`${DODO_BASE_URL}/payments`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DODO_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        billing: {
+          city: '',
+          country: 'US',
+          state: '',
+          street: '',
+          zipcode: '',
+        },
+        customer: {
+          email: 'customer@chirpify.ai',
+          name: 'Chirpify User',
+        },
+        product_cart: [
+          { product_id: product.id, quantity: 1 }
+        ],
+        return_url: `${returnUrl}?success=true&characters=${product.characters}`,
+      }),
     });
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Dodo Payments error:', data);
+      throw new Error(data.message || 'Payment creation failed');
+    }
+
     res.json({
-      checkoutUrl: checkoutSession.payment_link,
-      credits: product.credits,
+      checkoutUrl: data.payment_link,
+      characters: product.characters,
+      productName: product.name,
     });
   } catch (err) {
-    console.error('Dodo Payments error:', err.message);
+    console.error('Checkout error:', err.message);
     res.status(500).json({ error: 'Failed to create checkout session' });
   }
 }
