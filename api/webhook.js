@@ -1,4 +1,7 @@
+import crypto from 'crypto';
+
 const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY;
+const DODO_WEBHOOK_SECRET = process.env.DODO_WEBHOOK_SECRET;
 const DODO_BASE_URL = process.env.DODO_ENV === 'live'
   ? 'https://live.dodopayments.com'
   : 'https://test.dodopayments.com';
@@ -10,18 +13,53 @@ const PRODUCT_CREDITS = {
   'pdt_0NZCiMdfSCB8t18kVCowo': 200000,  // Power Pack
 };
 
+// Verify Dodo webhook signature (Standard Webhooks / Svix format)
+function verifyWebhookSignature(body, headers) {
+  const webhookId = headers['webhook-id'];
+  const webhookTimestamp = headers['webhook-timestamp'];
+  const webhookSignature = headers['webhook-signature'];
+
+  if (!webhookId || !webhookTimestamp || !webhookSignature) {
+    throw new Error('Missing webhook signature headers');
+  }
+
+  // Reject webhooks older than 5 minutes to prevent replay attacks
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - parseInt(webhookTimestamp)) > 300) {
+    throw new Error('Webhook timestamp too old');
+  }
+
+  // The signed content is: "{webhook-id}.{webhook-timestamp}.{body}"
+  const signedContent = `${webhookId}.${webhookTimestamp}.${typeof body === 'string' ? body : JSON.stringify(body)}`;
+
+  // Decode the secret (strip the "whsec_" prefix, then base64-decode)
+  const secretBytes = Buffer.from(DODO_WEBHOOK_SECRET.replace('whsec_', ''), 'base64');
+
+  // Compute the expected signature
+  const expectedSignature = crypto
+    .createHmac('sha256', secretBytes)
+    .update(signedContent)
+    .digest('base64');
+
+  // The header can contain multiple signatures (e.g., "v1,abc123 v1,def456")
+  const passedSignatures = webhookSignature.split(' ').map(sig => sig.split(',')[1]);
+
+  if (!passedSignatures.some(sig => sig === expectedSignature)) {
+    throw new Error('Invalid webhook signature');
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const webhookId = req.headers['webhook-id'];
-  const webhookTimestamp = req.headers['webhook-timestamp'];
-  const webhookSignature = req.headers['webhook-signature'];
-
-  // Basic header validation (add full Svix verification for production)
-  if (!webhookId || !webhookTimestamp || !webhookSignature) {
-    return res.status(400).json({ error: 'Missing webhook signature headers' });
+  // Step 1: Verify the webhook signature
+  try {
+    verifyWebhookSignature(req.body, req.headers);
+  } catch (err) {
+    console.error('Webhook verification failed:', err.message);
+    return res.status(401).json({ error: 'Invalid webhook signature' });
   }
 
   const event = req.body;
@@ -49,7 +87,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Credit the customer's wallet with character credits
+    // Step 2: Credit the customer's wallet
     const walletRes = await fetch(
       `${DODO_BASE_URL}/customers/${customerId}/wallets/ledger-entries`,
       {

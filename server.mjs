@@ -1,4 +1,5 @@
 import express from "express";
+import crypto from "crypto";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -12,6 +13,7 @@ app.use(express.static(join(__dirname, "public")));
 
 const ELEVENLABS_KEY = process.env.ELEVENLABS_KEY;
 const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY;
+const DODO_WEBHOOK_SECRET = process.env.DODO_WEBHOOK_SECRET;
 const DODO_BASE_URL = process.env.DODO_ENV === 'live'
   ? 'https://live.dodopayments.com'
   : 'https://test.dodopayments.com';
@@ -197,14 +199,41 @@ app.post("/api/speak", async (req, res) => {
   }
 });
 
-// Webhook handler for payment.succeeded
-app.post("/api/webhook", async (req, res) => {
-  const webhookId = req.headers['webhook-id'];
-  const webhookTimestamp = req.headers['webhook-timestamp'];
-  const webhookSignature = req.headers['webhook-signature'];
+// Verify Dodo webhook signature (Standard Webhooks / Svix format)
+function verifyWebhookSignature(body, headers) {
+  const webhookId = headers['webhook-id'];
+  const webhookTimestamp = headers['webhook-timestamp'];
+  const webhookSignature = headers['webhook-signature'];
 
   if (!webhookId || !webhookTimestamp || !webhookSignature) {
-    return res.status(400).json({ error: 'Missing webhook signature headers' });
+    throw new Error('Missing webhook signature headers');
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - parseInt(webhookTimestamp)) > 300) {
+    throw new Error('Webhook timestamp too old');
+  }
+
+  const signedContent = `${webhookId}.${webhookTimestamp}.${typeof body === 'string' ? body : JSON.stringify(body)}`;
+  const secretBytes = Buffer.from(DODO_WEBHOOK_SECRET.replace('whsec_', ''), 'base64');
+  const expectedSignature = crypto
+    .createHmac('sha256', secretBytes)
+    .update(signedContent)
+    .digest('base64');
+
+  const passedSignatures = webhookSignature.split(' ').map(sig => sig.split(',')[1]);
+  if (!passedSignatures.some(sig => sig === expectedSignature)) {
+    throw new Error('Invalid webhook signature');
+  }
+}
+
+// Webhook handler for payment.succeeded
+app.post("/api/webhook", async (req, res) => {
+  try {
+    verifyWebhookSignature(req.body, req.headers);
+  } catch (err) {
+    console.error('Webhook verification failed:', err.message);
+    return res.status(401).json({ error: 'Invalid webhook signature' });
   }
 
   const event = req.body;
