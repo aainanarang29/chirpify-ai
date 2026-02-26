@@ -20,7 +20,7 @@ const PRODUCTS = {
   },
 };
 
-const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY || 'Slm9C1tmQSfrEo-k.kmerxfRVwnZkp7tN250jUaDczJiYHP_smXlL3B_RO8II2Nce';
+const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY;
 const DODO_BASE_URL = process.env.DODO_ENV === 'live'
   ? 'https://live.dodopayments.com'
   : 'https://test.dodopayments.com';
@@ -30,10 +30,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { pack } = req.body;
+  const { pack, customerId } = req.body;
 
   if (!pack || !PRODUCTS[pack]) {
     return res.status(400).json({ error: 'Invalid pack selected' });
+  }
+
+  if (!customerId) {
+    return res.status(400).json({ error: 'customerId is required' });
   }
 
   const product = PRODUCTS[pack];
@@ -48,21 +52,12 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         payment_link: true,
-        billing: {
-          city: 'San Francisco',
-          country: 'US',
-          state: 'CA',
-          street: '123 Main St',
-          zipcode: '94102',
-        },
-        customer: {
-          email: 'customer@chirpify.ai',
-          name: 'Chirpify User',
-        },
+        billing: { country: 'US' },
+        customer: { customer_id: customerId },
         product_cart: [
           { product_id: product.id, quantity: 1 }
         ],
-        return_url: `${returnUrl}?success=true&characters=${product.characters}`,
+        return_url: `${returnUrl}?success=true`,
       }),
     });
 

@@ -1301,7 +1301,8 @@
     let selectedVoice = 'george';
     let stats = { chirps: 0, chars: 0, voices: {} };
     let isPlaying = false;
-    let credits = parseInt(localStorage.getItem('chirpify_characters') || '500');
+    let credits = 0;
+    let customerId = localStorage.getItem('chirpify_customer_id');
 
     /* ── DOM ── */
     const $ = id => document.getElementById(id);
@@ -1336,12 +1337,8 @@
     }
 
     function updateCreditsDisplay() {
-      localStorage.setItem('chirpify_characters', credits.toString());
-
-      // Update display
       creditsNumber.textContent = formatNumber(credits);
 
-      // Update styling based on credits level
       creditsCount.classList.remove('low', 'empty');
       if (credits <= 0) {
         creditsCount.classList.add('empty');
@@ -1350,23 +1347,54 @@
       }
     }
 
-    // Check URL for successful payment
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('success') === 'true') {
-      const addedChars = parseInt(urlParams.get('characters') || '0');
-      if (addedChars > 0) {
-        credits += addedChars;
-        updateCreditsDisplay();
-        // Clean up URL
-        window.history.replaceState({}, '', window.location.pathname);
-        // Show success message
-        setTimeout(() => {
-          showSuccess(`🎉 ${formatNumber(addedChars)} characters added!`);
-        }, 500);
+    // Fetch balance from Dodo wallet
+    async function fetchBalance() {
+      if (!customerId) return;
+      try {
+        const res = await fetch(`/api/balance?customer_id=${customerId}`);
+        const data = await res.json();
+        if (res.ok) {
+          credits = data.balance;
+          updateCreditsDisplay();
+        }
+      } catch (err) {
+        console.error('Failed to fetch balance:', err);
       }
     }
 
-    updateCreditsDisplay();
+    // Initialize: create customer if needed, then fetch balance
+    async function init() {
+      if (!customerId) {
+        try {
+          const res = await fetch('/api/customer', { method: 'POST' });
+          const data = await res.json();
+          if (res.ok) {
+            customerId = data.customerId;
+            localStorage.setItem('chirpify_customer_id', customerId);
+            credits = data.balance;
+            updateCreditsDisplay();
+          }
+        } catch (err) {
+          console.error('Failed to create customer:', err);
+        }
+      } else {
+        await fetchBalance();
+      }
+
+      // Check URL for successful payment redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('success') === 'true') {
+        window.history.replaceState({}, '', window.location.pathname);
+        // Fetch updated balance from wallet (webhook may take a moment)
+        await fetchBalance();
+        setTimeout(async () => {
+          await fetchBalance();
+          showSuccess('🎉 Credits added to your account!');
+        }, 2000);
+      }
+    }
+
+    init();
 
     /* ── PRICING MODAL ── */
     buyCreditsBtn.addEventListener('click', () => {
@@ -1393,7 +1421,7 @@
           const res = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pack })
+            body: JSON.stringify({ pack, customerId })
           });
 
           const data = await res.json();
@@ -1484,7 +1512,7 @@
 
       const charCost = text.length;
 
-      // Check credits
+      // Quick client-side check (server is source of truth)
       if (credits <= 0) {
         showError('Buy credits to chirpify! 🐦');
         pricingOverlay.classList.add('show');
@@ -1507,14 +1535,19 @@
         const res = await fetch('/api/speak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, voice: selectedVoice })
+          body: JSON.stringify({ text, voice: selectedVoice, customerId })
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Something went wrong');
+        if (!res.ok) {
+          if (res.status === 402) {
+            pricingOverlay.classList.add('show');
+          }
+          throw new Error(data.error || 'Something went wrong');
+        }
 
-        // Deduct characters based on text length
-        credits -= charCost;
+        // Update credits from server response
+        credits = data.balance;
         updateCreditsDisplay();
 
         // Set audio
