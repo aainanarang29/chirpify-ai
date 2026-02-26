@@ -39,6 +39,7 @@
     {
       "group": "Cookbook",
       "pages": [
+        "chirpify-cookbook",
         "cookbook/build-chirpify"
       ]
     }
