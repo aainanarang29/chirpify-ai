@@ -1,4 +1,5 @@
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
+import DodoPayments from 'dodopayments';
 
 const VOICES = {
   george: { id: "JBFqnCBsd6RMkjVDRZzb", name: "George", desc: "Warm British" },
@@ -12,10 +13,9 @@ const client = new ElevenLabsClient({
   apiKey: process.env.ELEVENLABS_KEY
 });
 
-const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY;
-const DODO_BASE_URL = process.env.DODO_ENV === 'live'
-  ? 'https://live.dodopayments.com'
-  : 'https://test.dodopayments.com';
+const dodo = new DodoPayments({
+  environment: process.env.DODO_ENV || 'test_mode',
+});
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -40,16 +40,9 @@ export default async function handler(req, res) {
   const charCost = text.length;
 
   try {
-    // Check wallet balance before calling ElevenLabs
-    const balanceRes = await fetch(
-      `${DODO_BASE_URL}/customers/${customerId}/wallets`,
-      { headers: { 'Authorization': `Bearer ${DODO_API_KEY}` } }
-    );
-
-    const balanceData = await balanceRes.json();
-    if (!balanceRes.ok) throw new Error('Failed to check balance');
-
-    const wallet = balanceData.items?.find(w => w.currency === 'USD');
+    // Check wallet balance
+    const walletData = await dodo.customers.wallets.list(customerId);
+    const wallet = walletData.items?.find(w => w.currency === 'USD');
     const balance = wallet?.balance || 0;
 
     if (balance < charCost) {
@@ -61,8 +54,7 @@ export default async function handler(req, res) {
 
     // Generate speech via ElevenLabs
     const audio = await client.textToSpeech.convert(voiceId, {
-      text: text,
-      model_id: "eleven_multilingual_v2"
+      text, model_id: "eleven_multilingual_v2"
     });
 
     const chunks = [];
@@ -72,32 +64,22 @@ export default async function handler(req, res) {
     const buffer = Buffer.concat(chunks);
 
     // Debit wallet only after successful generation
-    const debitRes = await fetch(
-      `${DODO_BASE_URL}/customers/${customerId}/wallets/ledger-entries`,
+    const debitResult = await dodo.customers.wallets.ledgerEntries.create(
+      customerId,
       {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${DODO_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: charCost,
-          currency: 'USD',
-          entry_type: 'debit',
-          idempotency_key: `tts_${customerId}_${Date.now()}`,
-          reason: `TTS generation: ${charCost} characters`,
-        }),
+        amount: charCost,
+        currency: 'USD',
+        entry_type: 'debit',
+        idempotency_key: `tts_${customerId}_${Date.now()}`,
+        reason: `TTS generation: ${charCost} characters`,
       }
     );
-
-    const debitData = await debitRes.json();
-    if (!debitRes.ok) throw new Error('Failed to debit credits');
 
     res.json({
       audio: buffer.toString("base64"),
       characters: charCost,
       voice: VOICES[voice]?.name || "George",
-      balance: debitData.balance,
+      balance: debitResult.balance,
     });
   } catch (err) {
     console.error("Speak error:", err.message);

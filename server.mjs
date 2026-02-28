@@ -1,6 +1,7 @@
 import express from "express";
 import crypto from "crypto";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
+import DodoPayments from "dodopayments";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
@@ -11,14 +12,13 @@ const app = express();
 app.use(express.json());
 app.use(express.static(join(__dirname, "public")));
 
-const ELEVENLABS_KEY = process.env.ELEVENLABS_KEY;
-const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY;
-const DODO_WEBHOOK_SECRET = process.env.DODO_WEBHOOK_SECRET;
-const DODO_BASE_URL = process.env.DODO_ENV === 'live'
-  ? 'https://live.dodopayments.com'
-  : 'https://test.dodopayments.com';
+const DODO_WEBHOOK_KEY = process.env.DODO_PAYMENTS_WEBHOOK_KEY;
 
-const client = new ElevenLabsClient({ apiKey: ELEVENLABS_KEY });
+const client = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_KEY });
+
+const dodo = new DodoPayments({
+  environment: process.env.DODO_ENV || 'test_mode',
+});
 
 // Available voices
 const VOICES = {
@@ -41,21 +41,6 @@ const PRODUCT_CREDITS = {
   'pdt_0NZCiMdfSCB8t18kVCowo': 200000,
 };
 
-// Helper: Dodo fetch
-async function dodoFetch(path, options = {}) {
-  const res = await fetch(`${DODO_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${DODO_API_KEY}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || `Dodo API error: ${res.status}`);
-  return data;
-}
-
 app.get("/api/voices", (req, res) => {
   res.json(VOICES);
 });
@@ -63,25 +48,19 @@ app.get("/api/voices", (req, res) => {
 // Create a new customer with 500 free characters
 app.post("/api/customer", async (req, res) => {
   try {
-    const customer = await dodoFetch('/customers', {
-      method: 'POST',
-      body: JSON.stringify({
-        email: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@chirpify.ai`,
-        name: 'Chirpify User',
-      }),
+    const customer = await dodo.customers.create({
+      email: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@chirpify.ai`,
+      name: 'Chirpify User',
     });
 
-    const wallet = await dodoFetch(
-      `/customers/${customer.customer_id}/wallets/ledger-entries`,
+    const wallet = await dodo.customers.wallets.ledgerEntries.create(
+      customer.customer_id,
       {
-        method: 'POST',
-        body: JSON.stringify({
-          amount: 500,
-          currency: 'USD',
-          entry_type: 'credit',
-          idempotency_key: `welcome_${customer.customer_id}`,
-          reason: 'Welcome bonus: 500 free characters',
-        }),
+        amount: 500,
+        currency: 'USD',
+        entry_type: 'credit',
+        idempotency_key: `welcome_${customer.customer_id}`,
+        reason: 'Welcome bonus: 500 free characters',
       }
     );
 
@@ -98,8 +77,8 @@ app.get("/api/balance", async (req, res) => {
   if (!customerId) return res.status(400).json({ error: 'customer_id is required' });
 
   try {
-    const data = await dodoFetch(`/customers/${customerId}/wallets`);
-    const wallet = data.items?.find(w => w.currency === 'USD');
+    const walletData = await dodo.customers.wallets.list(customerId);
+    const wallet = walletData.items?.find(w => w.currency === 'USD');
     res.json({ balance: wallet?.balance || 0, customerId });
   } catch (err) {
     console.error('Balance error:', err.message);
@@ -118,19 +97,15 @@ app.post("/api/checkout", async (req, res) => {
   const returnUrl = process.env.SITE_URL || 'http://localhost:3000';
 
   try {
-    const data = await dodoFetch('/payments', {
-      method: 'POST',
-      body: JSON.stringify({
-        payment_link: true,
-        billing: { country: 'US' },
-        customer: { customer_id: customerId },
-        product_cart: [{ product_id: product.id, quantity: 1 }],
-        return_url: `${returnUrl}?success=true`,
-      }),
+    const session = await dodo.checkoutSessions.create({
+      billing_address: { country: 'US' },
+      customer: { customer_id: customerId },
+      product_cart: [{ product_id: product.id, quantity: 1 }],
+      return_url: `${returnUrl}?success=true`,
     });
 
     res.json({
-      checkoutUrl: data.payment_link,
+      checkoutUrl: session.checkout_url,
       characters: product.characters,
       productName: product.name,
     });
@@ -153,8 +128,8 @@ app.post("/api/speak", async (req, res) => {
 
   try {
     // Check wallet balance
-    const balanceData = await dodoFetch(`/customers/${customerId}/wallets`);
-    const wallet = balanceData.items?.find(w => w.currency === 'USD');
+    const walletData = await dodo.customers.wallets.list(customerId);
+    const wallet = walletData.items?.find(w => w.currency === 'USD');
     const balance = wallet?.balance || 0;
 
     if (balance < charCost) {
@@ -173,17 +148,14 @@ app.post("/api/speak", async (req, res) => {
     const buffer = Buffer.concat(chunks);
 
     // Debit wallet after successful generation
-    const debitData = await dodoFetch(
-      `/customers/${customerId}/wallets/ledger-entries`,
+    const debitResult = await dodo.customers.wallets.ledgerEntries.create(
+      customerId,
       {
-        method: 'POST',
-        body: JSON.stringify({
-          amount: charCost,
-          currency: 'USD',
-          entry_type: 'debit',
-          idempotency_key: `tts_${customerId}_${Date.now()}`,
-          reason: `TTS generation: ${charCost} characters`,
-        }),
+        amount: charCost,
+        currency: 'USD',
+        entry_type: 'debit',
+        idempotency_key: `tts_${customerId}_${Date.now()}`,
+        reason: `TTS generation: ${charCost} characters`,
       }
     );
 
@@ -191,7 +163,7 @@ app.post("/api/speak", async (req, res) => {
       audio: buffer.toString("base64"),
       characters: charCost,
       voice: VOICES[voice]?.name || "George",
-      balance: debitData.balance,
+      balance: debitResult.balance,
     });
   } catch (err) {
     console.error("Speak error:", err.message);
@@ -215,7 +187,7 @@ function verifyWebhookSignature(body, headers) {
   }
 
   const signedContent = `${webhookId}.${webhookTimestamp}.${typeof body === 'string' ? body : JSON.stringify(body)}`;
-  const secretBytes = Buffer.from(DODO_WEBHOOK_SECRET.replace('whsec_', ''), 'base64');
+  const secretBytes = Buffer.from(DODO_WEBHOOK_KEY.replace('whsec_', ''), 'base64');
   const expectedSignature = crypto
     .createHmac('sha256', secretBytes)
     .update(signedContent)
@@ -255,17 +227,14 @@ app.post("/api/webhook", async (req, res) => {
   if (!characters) return res.status(400).json({ error: 'Unknown product' });
 
   try {
-    const wallet = await dodoFetch(
-      `/customers/${customerId}/wallets/ledger-entries`,
+    const wallet = await dodo.customers.wallets.ledgerEntries.create(
+      customerId,
       {
-        method: 'POST',
-        body: JSON.stringify({
-          amount: characters,
-          currency: 'USD',
-          entry_type: 'credit',
-          idempotency_key: paymentId,
-          reason: `Credit pack purchase: ${characters.toLocaleString()} characters`,
-        }),
+        amount: characters,
+        currency: 'USD',
+        entry_type: 'credit',
+        idempotency_key: paymentId,
+        reason: `Credit pack purchase: ${characters.toLocaleString()} characters`,
       }
     );
 

@@ -1,7 +1,8 @@
-const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY;
-const DODO_BASE_URL = process.env.DODO_ENV === 'live'
-  ? 'https://live.dodopayments.com'
-  : 'https://test.dodopayments.com';
+import DodoPayments from 'dodopayments';
+
+const dodo = new DodoPayments({
+  environment: process.env.DODO_ENV || 'test_mode',
+});
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -14,14 +15,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`${DODO_BASE_URL}/customers/${customerId}/wallets`, {
-      headers: { 'Authorization': `Bearer ${DODO_API_KEY}` },
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Failed to fetch balance');
-
-    const wallet = data.items?.find(w => w.currency === 'USD');
+    const walletData = await dodo.customers.wallets.list(customerId);
+    const wallet = walletData.items?.find(w => w.currency === 'USD');
 
     res.json({
       balance: wallet?.balance || 0,

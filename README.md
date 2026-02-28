@@ -24,8 +24,8 @@ Create a `.env` file:
 
 ```
 DODO_PAYMENTS_API_KEY=sk_test_your_key
-DODO_ENV=test
-DODO_WEBHOOK_SECRET=whsec_your_secret
+DODO_ENV=test_mode
+DODO_PAYMENTS_WEBHOOK_KEY=whsec_your_secret
 ELEVENLABS_KEY=xi_your_key
 SITE_URL=http://localhost:3000
 ```

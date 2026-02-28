@@ -1,29 +1,14 @@
-// Character credit packs for Chirpify AI
+import DodoPayments from 'dodopayments';
+
 const PRODUCTS = {
-  starter: {
-    id: 'pdt_0NZCiIwZqFmmRpNK6z00J',
-    characters: 10000,
-    price: 5,
-    name: 'Starter Pack'
-  },
-  pro: {
-    id: 'pdt_0NZCiKxzvABY1VnpQrCS5',
-    characters: 50000,
-    price: 10,
-    name: 'Pro Pack'
-  },
-  power: {
-    id: 'pdt_0NZCiMdfSCB8t18kVCowo',
-    characters: 200000,
-    price: 25,
-    name: 'Power Pack'
-  },
+  starter: { id: 'pdt_0NZCiIwZqFmmRpNK6z00J', characters: 10000, price: 5, name: 'Starter Pack' },
+  pro:     { id: 'pdt_0NZCiKxzvABY1VnpQrCS5', characters: 50000, price: 10, name: 'Pro Pack' },
+  power:   { id: 'pdt_0NZCiMdfSCB8t18kVCowo', characters: 200000, price: 25, name: 'Power Pack' },
 };
 
-const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY;
-const DODO_BASE_URL = process.env.DODO_ENV === 'live'
-  ? 'https://live.dodopayments.com'
-  : 'https://test.dodopayments.com';
+const dodo = new DodoPayments({
+  environment: process.env.DODO_ENV || 'test_mode',
+});
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -44,32 +29,15 @@ export default async function handler(req, res) {
   const returnUrl = process.env.SITE_URL || 'https://chirpify-ai.vercel.app';
 
   try {
-    const response = await fetch(`${DODO_BASE_URL}/payments`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${DODO_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        payment_link: true,
-        billing: { country: 'US' },
-        customer: { customer_id: customerId },
-        product_cart: [
-          { product_id: product.id, quantity: 1 }
-        ],
-        return_url: `${returnUrl}?success=true`,
-      }),
+    const session = await dodo.checkoutSessions.create({
+      billing_address: { country: 'US' },
+      customer: { customer_id: customerId },
+      product_cart: [{ product_id: product.id, quantity: 1 }],
+      return_url: `${returnUrl}?success=true`,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('Dodo Payments error:', data);
-      throw new Error(data.message || 'Payment creation failed');
-    }
-
     res.json({
-      checkoutUrl: data.payment_link,
+      checkoutUrl: session.checkout_url,
       characters: product.characters,
       productName: product.name,
     });
