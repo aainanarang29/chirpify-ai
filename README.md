@@ -47,7 +47,7 @@ vercel --prod
 
 ## Create products
 
-Create three products in your [Dodo Dashboard](https://dashboard.dodopayments.com) or use cURL:
+Create three products in your [Dodo Dashboard](https://dodopayments.com/) or use cURL:
 
 ```bash
 # Starter Pack - $5
