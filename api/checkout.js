@@ -29,15 +29,16 @@ export default async function handler(req, res) {
   const returnUrl = process.env.SITE_URL || 'https://chirpify-ai.vercel.app';
 
   try {
-    const session = await dodo.checkoutSessions.create({
-      billing_address: { country: 'US' },
+    const payment = await dodo.payments.create({
+      payment_link: true,
+      billing: { country: 'US' },
       customer: { customer_id: customerId },
       product_cart: [{ product_id: product.id, quantity: 1 }],
       return_url: `${returnUrl}?success=true`,
     });
 
     res.json({
-      checkoutUrl: session.checkout_url,
+      checkoutUrl: payment.payment_link,
       characters: product.characters,
       productName: product.name,
     });
